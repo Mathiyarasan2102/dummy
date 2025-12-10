@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { User, Heart, MessageSquare, Settings, LogOut } from 'lucide-react';
-import { useLogoutMutation, useUpdateUserMutation } from '../store/usersApiSlice';
+import { User, Heart, MessageSquare, Settings, LogOut, MapPin, BedDouble, Bath, Square, X } from 'lucide-react';
+import { useLogoutMutation, useUpdateUserMutation, useGetWishlistQuery, useToggleWishlistMutation } from '../store/usersApiSlice';
 import { logOut, setCredentials } from '../store/authSlice';
 
 const Dashboard = () => {
@@ -11,6 +11,8 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('profile');
     const [logout] = useLogoutMutation();
     const [updateUser, { isLoading, isSuccess }] = useUpdateUserMutation();
+    const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery();
+    const [toggleWishlist] = useToggleWishlistMutation();
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -21,7 +23,16 @@ const Dashboard = () => {
         e.preventDefault();
         try {
             const res = await updateUser({ name, email: user.email }).unwrap();
-            dispatch(setCredentials({ ...res }));
+            dispatch(setCredentials({
+                user: {
+                    _id: res._id,
+                    name: res.name,
+                    email: res.email,
+                    role: res.role,
+                    avatar: res.avatar
+                },
+                token: res.token
+            }));
             // Optional: Show success toast
         } catch (err) {
             console.error(err);
@@ -48,9 +59,14 @@ const Dashboard = () => {
                         <h2 className="text-2xl font-serif text-cream mb-6">Profile Settings</h2>
                         <div className="flex items-center mb-8">
                             <img
-                                src={user?.avatar}
+                                src={user?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.name || "User") + "&background=1e293b&color=fbbf24&size=256&length=1"}
                                 alt={user?.name}
-                                className="w-24 h-24 rounded-full border-2 border-gold-400 mr-6"
+                                className="w-24 h-24 rounded-full border-2 border-gold-400 mr-6 object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.name || "User") + "&background=1e293b&color=fbbf24&size=256&length=1";
+                                }}
                             />
                             <div>
                                 <h3 className="text-xl font-bold text-cream">{user?.name}</h3>
@@ -87,10 +103,76 @@ const Dashboard = () => {
                     </div>
                 );
             case 'wishlist':
+                const handleRemoveFromWishlist = async (propertyId) => {
+                    try {
+                        await toggleWishlist(propertyId).unwrap();
+                        refetchWishlist();
+                    } catch (err) {
+                        console.error(err);
+                    }
+                };
+
                 return (
                     <div className="bg-navy-800 p-6 rounded-lg border border-navy-700">
-                        <h2 className="text-2xl font-serif text-cream mb-4">My Wishlist</h2>
-                        <p className="text-gray-400">Your saved properties will appear here.</p>
+                        <h2 className="text-2xl font-serif text-cream mb-6">My Wishlist</h2>
+                        {!wishlistData || wishlistData?.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Heart size={48} className="mx-auto text-gray-600 mb-4" />
+                                <p className="text-gray-400">Your wishlist is empty</p>
+                                <Link to="/properties" className="text-gold-400 hover:text-gold-500 mt-2 inline-block">
+                                    Browse Properties
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {wishlistData?.map((property) => (
+                                    <div key={property._id} className="bg-navy-900 rounded-lg overflow-hidden border border-navy-700 hover:border-gold-400 transition-all relative group">
+                                        <button
+                                            onClick={() => handleRemoveFromWishlist(property._id)}
+                                            className="absolute top-2 right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-all"
+                                            title="Remove from wishlist"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                        <Link to={`/properties/${property.slug}`}>
+                                            <img
+                                                src={property.coverImage}
+                                                alt={property.title}
+                                                className="w-full h-48 object-cover"
+                                            />
+                                            <div className="p-4">
+                                                <h3 className="text-lg font-bold text-cream mb-2 line-clamp-1">{property.title}</h3>
+                                                <p className="text-gold-400 text-xl font-bold mb-3">${property.price.toLocaleString()}</p>
+                                                <div className="flex items-center text-gray-400 text-sm gap-4 mb-2">
+                                                    <span className="flex items-center gap-1">
+                                                        <MapPin size={14} />
+                                                        {property.location.city}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center text-gray-400 text-sm gap-4">
+                                                    {property.bedrooms > 0 && (
+                                                        <span className="flex items-center gap-1">
+                                                            <BedDouble size={14} />
+                                                            {property.bedrooms}
+                                                        </span>
+                                                    )}
+                                                    {property.bathrooms > 0 && (
+                                                        <span className="flex items-center gap-1">
+                                                            <Bath size={14} />
+                                                            {property.bathrooms}
+                                                        </span>
+                                                    )}
+                                                    <span className="flex items-center gap-1">
+                                                        <Square size={14} />
+                                                        {property.areaSqft.toLocaleString()} sqft
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 );
             case 'inquiries':

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGetPropertiesQuery } from '../store/propertiesApiSlice';
 import Layout from '../components/layout/Layout';
 import PropertyCard from '../components/properties/PropertyCard';
@@ -16,6 +16,11 @@ const Properties = () => {
         page
     });
 
+    // Scroll to top when page changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [page]);
+
     const propertyTypes = ['All', 'House', 'Apartment', 'Condo', 'Villa', 'Commercial', 'Land'];
 
     return (
@@ -29,7 +34,7 @@ const Properties = () => {
 
             <div className="container mx-auto px-4 mb-16">
                 {/* Filters */}
-                <div className="bg-navy-800 p-6 rounded-lg mb-8 border border-navy-700 sticky top-20 z-10 shadow-xl">
+                <div className="bg-navy-800 p-6 rounded-lg mb-8 border border-navy-700 shadow-xl">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
@@ -73,24 +78,36 @@ const Properties = () => {
                             <div className="text-center py-20 text-gray-400">No properties found matching your criteria.</div>
                         )}
 
-                        {/* Simple Pagination */}
-                        <div className="flex justify-center mt-12 gap-2">
-                            <button
-                                onClick={() => setPage(page - 1)}
-                                disabled={page === 1}
-                                className="px-4 py-2 bg-navy-800 text-cream rounded disabled:opacity-50 hover:bg-navy-700"
-                            >
-                                Previous
-                            </button>
-                            <span className="px-4 py-2 text-gold-400">Page {page} of {data?.pages || 1}</span>
-                            <button
-                                onClick={() => setPage(page + 1)}
-                                disabled={page === (data?.pages || 1)}
-                                className="px-4 py-2 bg-navy-800 text-cream rounded disabled:opacity-50 hover:bg-navy-700"
-                            >
-                                Next
-                            </button>
-                        </div>
+                        {/* Pagination */}
+                        {data?.pages > 1 && data?.properties?.length > 0 && (
+                            <div className="flex justify-center mt-12 gap-2">
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="px-4 py-2 bg-navy-800 text-cream rounded disabled:opacity-50 hover:bg-navy-700 transition"
+                                >
+                                    Previous
+                                </button>
+
+                                {[...Array(data.pages).keys()].map(x => (
+                                    <button
+                                        key={x + 1}
+                                        onClick={() => setPage(x + 1)}
+                                        className={`px-4 py-2 rounded transition ${page === x + 1 ? 'bg-gold-400 text-navy-900 font-bold' : 'bg-navy-800 text-cream hover:bg-navy-700'}`}
+                                    >
+                                        {x + 1}
+                                    </button>
+                                ))}
+
+                                <button
+                                    onClick={() => setPage(p => Math.min(data.pages, p + 1))}
+                                    disabled={page === data.pages}
+                                    className="px-4 py-2 bg-navy-800 text-cream rounded disabled:opacity-50 hover:bg-navy-700 transition"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

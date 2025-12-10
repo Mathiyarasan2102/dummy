@@ -35,9 +35,14 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/properties', require('./routes/propertyRoutes'));
 app.use('/api/inquiries', require('./routes/inquiryRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Error Handler Middleware
 app.use((err, req, res, next) => {
+    console.error('=== ERROR HANDLER ===');
+    console.error('Error:', err.message);
+    console.error('Stack:', err.stack);
+
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     res.status(statusCode);
     res.json({

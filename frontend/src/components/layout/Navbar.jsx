@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLogoutMutation } from '../../store/usersApiSlice';
 import { logOut } from '../../store/authSlice';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, User } from 'lucide-react';
 
 const Navbar = () => {
     const { user } = useSelector((state) => state.auth);
@@ -44,15 +44,18 @@ const Navbar = () => {
                             <div className="ml-3 relative flex items-center space-x-4">
                                 <Link to="/dashboard" className="text-cream text-sm hover:text-gold-400 transition-colors">Welcome, {user.name}</Link>
 
-                                {user.avatar && (
-                                    <Link to="/dashboard">
-                                        <img
-                                            className="h-8 w-8 rounded-full border border-gold-400 object-cover"
-                                            src={user.avatar}
-                                            alt={user.name}
-                                        />
-                                    </Link>
-                                )}
+                                <Link to="/dashboard">
+                                    <img
+                                        className="h-8 w-8 rounded-full border border-gold-400 object-cover"
+                                        src={user.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name) + "&background=1e293b&color=fbbf24&size=128&length=1"}
+                                        alt={user.name}
+                                        loading="lazy"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name) + "&background=1e293b&color=fbbf24&size=128&length=1";
+                                        }}
+                                    />
+                                </Link>
                             </div>
                         ) : (
                             <div className="space-x-4">
@@ -86,6 +89,7 @@ const Navbar = () => {
                         )}
                         {user && (
                             <>
+                                <div className="px-3 py-2 text-base font-medium text-gold-400">Welcome, {user.name}</div>
                                 <Link to="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-navy-700">My Dashboard</Link>
                                 <button onClick={handleLogout} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-navy-700">Logout</button>
                             </>

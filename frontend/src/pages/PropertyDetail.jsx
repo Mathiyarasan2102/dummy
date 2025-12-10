@@ -1,13 +1,51 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { useGetPropertyQuery } from '../store/propertiesApiSlice';
+import { useGetWishlistQuery, useToggleWishlistMutation } from '../store/usersApiSlice';
 import Layout from '../components/layout/Layout';
-import { MapPin, BedDouble, Bath, Square, ArrowLeft, Send } from 'lucide-react';
+import { MapPin, BedDouble, Bath, Square, ArrowLeft, Send, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PropertyDetail = () => {
     const { slug } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user } = useSelector((state) => state.auth);
     const { data: property, isLoading, error } = useGetPropertyQuery(slug);
+
+    // Wishlist Logic
+    const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(undefined, { skip: !user });
+    const [toggleWishlist, { isLoading: isTogglingWishlist }] = useToggleWishlistMutation();
+
+    // Check if current property is in wishlist
+    const isInWishlist = wishlistData?.some(item => {
+        const itemId = item._id || item;
+        const propertyId = property?._id;
+        return itemId?.toString() === propertyId?.toString();
+    }) || false;
+
+    const handleWishlistToggle = async () => {
+        if (!user) {
+            navigate('/login', { state: { from: location } });
+            return;
+        }
+
+        if (!property?._id) {
+            console.error('Property ID not available');
+            return;
+        }
+
+        try {
+            console.log('Toggling wishlist for property:', property._id);
+            const result = await toggleWishlist(property._id).unwrap();
+            console.log('Wishlist toggle result:', result);
+            await refetchWishlist();
+        } catch (err) {
+            console.error('Wishlist toggle error:', err);
+            alert(err?.data?.message || 'Failed to update wishlist');
+        }
+    };
 
     // Inquiry Form State
     const [message, setMessage] = useState('');
@@ -43,8 +81,18 @@ const PropertyDetail = () => {
                                 {property.location?.city}, {property.location?.country}
                             </div>
                         </div>
-                        <div className="text-3xl md:text-4xl font-bold text-gold-400 mt-4 md:mt-0">
-                            ${property.price.toLocaleString()}
+                        <div className="flex items-center gap-6 mt-4 md:mt-0">
+                            <div className="text-3xl md:text-4xl font-bold text-gold-400">
+                                ${property.price.toLocaleString()}
+                            </div>
+                            <button
+                                onClick={handleWishlistToggle}
+                                disabled={isTogglingWishlist}
+                                className={`p-3 rounded-full transition-colors ${isInWishlist ? 'bg-red-500 text-white' : 'bg-navy-700 text-gray-300 hover:text-red-500 hover:bg-navy-600'}`}
+                                title={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                            >
+                                <Heart size={28} fill={isInWishlist ? "currentColor" : "none"} />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -98,12 +146,17 @@ const PropertyDetail = () => {
                             <h3 className="text-xl font-serif text-cream mb-6">Contact Agent</h3>
                             <div className="flex items-center mb-6">
                                 <img
-                                    src={property.agentId?.avatar || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"}
+                                    src={property.agentId?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(property.agentId?.name || "Agent") + "&background=1e293b&color=fbbf24&size=128&length=1"}
                                     alt="Agent"
-                                    className="w-16 h-16 rounded-full border-2 border-gold-400 mr-4"
+                                    className="w-16 h-16 rounded-full border-2 border-gold-400 mr-4 object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(property.agentId?.name || "Agent") + "&background=1e293b&color=fbbf24&size=128&length=1";
+                                    }}
                                 />
                                 <div>
-                                    <h4 className="text-lg font-bold text-cream">{property.agentId?.name || "Luxe Agent"}</h4>
+                                    <h4 className="text-lg font-bold text-cream">{property.agentId?.name || "LuxeEstate Agent"}</h4>
                                     <p className="text-gold-400 text-sm">Senior Real Estate Agent</p>
                                 </div>
                             </div>

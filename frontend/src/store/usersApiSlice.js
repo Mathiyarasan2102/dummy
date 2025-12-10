@@ -36,6 +36,16 @@ export const usersApiSlice = apiSlice.injectEndpoints({
                 body: data,
             }),
         }),
+        getWishlist: builder.query({
+            query: () => '/users/wishlist',
+            keepUnusedDataFor: 5,
+        }),
+        toggleWishlist: builder.mutation({
+            query: (propertyId) => ({
+                url: `/users/wishlist/${propertyId}`,
+                method: 'PUT',
+            }),
+        }),
     }),
 });
 
@@ -44,5 +54,7 @@ export const {
     useRegisterMutation,
     useGoogleLoginMutation,
     useLogoutMutation,
-    useUpdateUserMutation
+    useUpdateUserMutation,
+    useGetWishlistQuery,
+    useToggleWishlistMutation
 } = usersApiSlice;

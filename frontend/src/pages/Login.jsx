@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLoginMutation } from '../store/usersApiSlice';
 import { setCredentials } from '../store/authSlice';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import GoogleLoginBtn from '../components/auth/GoogleLoginBtn';
 import Layout from '../components/layout/Layout';
 
@@ -11,23 +11,35 @@ const Login = () => {
     const [password, setPassword] = useState('');
 
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useDispatch();
 
     const [login, { isLoading, error }] = useLoginMutation();
     const { user } = useSelector((state) => state.auth);
 
+    const from = location.state?.from?.pathname || '/';
+
     useEffect(() => {
         if (user) {
-            navigate('/');
+            navigate(from, { replace: true });
         }
-    }, [navigate, user]);
+    }, [navigate, user, from]);
 
     const submitHandler = async (e) => {
         e.preventDefault();
         try {
             const res = await login({ email, password }).unwrap();
-            dispatch(setCredentials({ ...res }));
-            navigate('/');
+            dispatch(setCredentials({
+                user: {
+                    _id: res._id,
+                    name: res.name,
+                    email: res.email,
+                    role: res.role,
+                    avatar: res.avatar
+                },
+                token: res.token
+            }));
+            navigate(from, { replace: true });
         } catch (err) {
             console.error(err);
         }
@@ -48,6 +60,7 @@ const Login = () => {
                                 placeholder="Enter email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                required
                             />
                         </div>
                         <div>
@@ -58,6 +71,8 @@ const Login = () => {
                                 placeholder="Enter password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength="6"
                             />
                         </div>
                         <button

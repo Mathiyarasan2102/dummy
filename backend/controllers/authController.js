@@ -15,7 +15,8 @@ const registerUser = async (req, res) => {
         }
 
         // Check if user exists
-        const userExists = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase();
+        const userExists = await User.findOne({ email: normalizedEmail });
 
         if (userExists) {
             res.status(400);
@@ -25,7 +26,7 @@ const registerUser = async (req, res) => {
         // Create user
         const user = await User.create({
             name,
-            email,
+            email: normalizedEmail,
             password,
             role: role || 'user'
         });
@@ -65,9 +66,10 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = email.toLowerCase();
 
         // Check for user email
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
             const accessToken = generateAccessToken(user._id);
@@ -230,6 +232,40 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+// @desc    Upgrade to Agent role
+// @route   POST /api/auth/upgrade-agent
+// @access  Private
+const upgradeToAgent = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.role = 'agent';
+            const updatedUser = await user.save();
+
+            // Re-generate token with new role logic if needed, 
+            // but role is usually fetched from DB on verify, or encoded in token?
+            // Auth middleware fetches user from DB, so role is fresh.
+            // But frontend needs new token/user data to update state.
+            const accessToken = generateAccessToken(updatedUser._id);
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                avatar: updatedUser.avatar,
+                token: accessToken
+            });
+        } else {
+            res.status(404);
+            throw new Error('User not found');
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -237,5 +273,6 @@ module.exports = {
     logoutUser,
     refresh,
     getMe,
-    updateUserProfile
+    updateUserProfile,
+    upgradeToAgent
 };

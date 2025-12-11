@@ -37,6 +37,15 @@ const Navbar = () => {
                             <Link to="/properties" className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Properties</Link>
                             <Link to="/about" className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">About</Link>
                             <Link to="/contact" className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Contact</Link>
+                            {user ? (
+                                <Link to="/seller/dashboard" className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gold-400/90">
+                                    {user.role === 'agent' || user.role === 'admin' ? 'Seller Dashboard' : 'Become a Seller'}
+                                </Link>
+                            ) : (
+                                <Link to="/login?isSeller=true&redirect=/seller/dashboard" className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Seller
+                                </Link>
+                            )}
                         </div>
                     </div>
                     <div className="hidden sm:flex sm:items-center">
@@ -47,12 +56,16 @@ const Navbar = () => {
                                 <Link to="/dashboard">
                                     <img
                                         className="h-8 w-8 rounded-full border border-gold-400 object-cover"
-                                        src={user.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name) + "&background=1e293b&color=fbbf24&size=128&length=1"}
+                                        src={
+                                            user.avatar && !user.avatar.includes('placeholder_jwb00i') && !user.avatar.includes('ui-avatars.com')
+                                                ? user.avatar
+                                                : `https://ui-avatars.com/api/?name=${encodeURIComponent((user.name || 'User').charAt(0))}&background=d4af37&color=1e293b&size=128&bold=true&length=1`
+                                        }
                                         alt={user.name}
                                         loading="lazy"
                                         onError={(e) => {
                                             e.target.onerror = null;
-                                            e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name) + "&background=1e293b&color=fbbf24&size=128&length=1";
+                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((user.name || 'User').charAt(0))}&background=d4af37&color=1e293b&size=128&bold=true&length=1`;
                                         }}
                                     />
                                 </Link>
@@ -91,6 +104,9 @@ const Navbar = () => {
                             <>
                                 <div className="px-3 py-2 text-base font-medium text-gold-400">Welcome, {user.name}</div>
                                 <Link to="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-navy-700">My Dashboard</Link>
+                                <Link to="/seller/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-navy-700">
+                                    {user.role === 'agent' || user.role === 'admin' ? 'Seller Dashboard' : 'Become a Seller'}
+                                </Link>
                                 <button onClick={handleLogout} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-navy-700">Logout</button>
                             </>
                         )}

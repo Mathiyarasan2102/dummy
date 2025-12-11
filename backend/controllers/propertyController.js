@@ -1,209 +1,259 @@
+const asyncHandler = require('../middleware/asyncHandler');
 const Property = require('../models/Property');
+const { uploadToCloudinary } = require('../utils/cloudinary');
 
 // @desc    Get all properties
 // @route   GET /api/properties
 // @access  Public
-const getProperties = async (req, res) => {
-    try {
-        let {
-            search,
-            type,
-            minPrice,
-            maxPrice,
-            bedrooms,
-            bathrooms,
-            sort,
-            page,
-            limit
-        } = req.query;
+const getProperties = asyncHandler(async (req, res) => {
+    const {
+        city,
+        propertyType,
+        type, // Alias for propertyType from frontend
+        search, // General search term
+        minPrice,
+        maxPrice,
+        bedrooms,
+        bathrooms,
+        page = 1,
+        limit = 12
+    } = req.query;
 
-        // Build query
-        const query = {};
+    let query = { approvalStatus: 'approved', isArchived: false };
 
-        // Approve properties only for public
-        // If query has 'status', let it override if admin? 
-        // For now, let's assume public only sees approved. 
-        // Admins might use a different endpoint or param.
-        query.approvalStatus = 'approved';
-
-        if (search) {
-            query.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { 'location.city': { $regex: search, $options: 'i' } }
-            ];
-        }
-
-        if (type) {
-            query.propertyType = type;
-        }
-
-        if (minPrice || maxPrice) {
-            query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice);
-            if (maxPrice) query.price.$lte = Number(maxPrice);
-        }
-
-        if (bedrooms) {
-            query.bedrooms = { $gte: Number(bedrooms) };
-        }
-
-        if (bathrooms) {
-            query.bathrooms = { $gte: Number(bathrooms) };
-        }
-
-        // Sorting
-        let sortOption = { createdAt: -1 }; // Default new to old
-        if (sort) {
-            if (sort === 'price_asc') sortOption = { price: 1 };
-            if (sort === 'price_desc') sortOption = { price: -1 };
-            if (sort === 'oldest') sortOption = { createdAt: 1 };
-        }
-
-        // Pagination
-        const pageNum = Number(page) || 1;
-        const limitNum = Number(limit) || 9;
-        const skip = (pageNum - 1) * limitNum;
-
-        const total = await Property.countDocuments(query);
-        const properties = await Property.find(query)
-            .sort(sortOption)
-            .skip(skip)
-            .limit(limitNum)
-            .populate('agentId', 'name email avatar');
-
-        res.json({
-            properties,
-            page: pageNum,
-            pages: Math.ceil(total / limitNum),
-            total
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    // Handle general search (searches title and city)
+    if (search) {
+        query.$or = [
+            { title: new RegExp(search, 'i') },
+            { 'location.city': new RegExp(search, 'i') },
+            { 'location.state': new RegExp(search, 'i') }
+        ];
     }
-};
 
-// @desc    Get single property
-// @route   GET /api/properties/:slug
+    // Specific city filter
+    if (city) query['location.city'] = new RegExp(city, 'i');
+
+    // Property type filter (support both 'type' and 'propertyType')
+    const typeFilter = type || propertyType;
+    if (typeFilter) query.propertyType = typeFilter;
+
+    if (minPrice || maxPrice) {
+        query.price = {};
+        if (minPrice) query.price.$gte = Number(minPrice);
+        if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+    if (bedrooms) query.bedrooms = { $gte: Number(bedrooms) };
+    if (bathrooms) query.bathrooms = { $gte: Number(bathrooms) };
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const total = await Property.countDocuments(query);
+
+    const properties = await Property.find(query)
+        .populate('agentId', 'name email avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit));
+
+    res.json({
+        properties,
+        page: Number(page),
+        pages: Math.ceil(total / Number(limit)),
+        total
+    });
+});
+
+// @desc    Get single property by ID or Slug
+// @route   GET /api/properties/:id
 // @access  Public
-const getProperty = async (req, res) => {
-    try {
-        const property = await Property.findOne({ slug: req.params.slug })
-            .populate('agentId', 'name email avatar');
+const getProperty = asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
-        if (!property) {
-            res.status(404);
-            throw new Error('Property not found');
-        }
+    // Try to find by slug first, then by ID
+    let property = await Property.findOne({ slug: id }).populate('agentId', 'name email avatar');
 
-        res.json(property);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    if (!property) {
+        property = await Property.findById(id).populate('agentId', 'name email avatar');
     }
-};
+
+    if (!property) {
+        res.status(404);
+        throw new Error('Property not found');
+    }
+
+    // Increment view count
+    property.stats.views += 1;
+    await property.save();
+
+    res.json(property);
+});
+
+// @desc    Get agent's properties
+// @route   GET /api/properties/agent/my-listings
+// @access  Private (Agent/Admin)
+const getAgentProperties = asyncHandler(async (req, res) => {
+    const properties = await Property.find({ agentId: req.user._id })
+        .populate('agentId', 'name email avatar')
+        .sort({ createdAt: -1 });
+
+    res.json(properties);
+});
 
 // @desc    Create new property
 // @route   POST /api/properties
 // @access  Private (Agent/Admin)
-const createProperty = async (req, res) => {
-    try {
-        // req.files is array of files from multer
-        const images = req.files ? req.files.map(file => file.path) : [];
-        if (req.body.coverImageIndex && images.length > req.body.coverImageIndex) {
-            req.body.coverImage = images[req.body.coverImageIndex];
-        } else if (images.length > 0) {
-            req.body.coverImage = images[0];
-        }
+const createProperty = asyncHandler(async (req, res) => {
+    const {
+        title,
+        description,
+        price,
+        location,
+        bedrooms,
+        bathrooms,
+        areaSqft,
+        propertyType,
+        amenities,
+        images,
+        coverImage
+    } = req.body;
 
-        // If coverImage is sent as string (e.g. from existing URL or different logic), respect it.
-        // But typically we rely on upload.
+    const property = await Property.create({
+        title,
+        description,
+        price,
+        location,
+        bedrooms,
+        bathrooms,
+        areaSqft,
+        propertyType,
+        amenities,
+        images,
+        coverImage,
+        agentId: req.user._id,
+        approvalStatus: 'draft'
+    });
 
-        // Manual override for location if sent as string JSON
-        let location = req.body.location;
-        if (typeof location === 'string') {
-            location = JSON.parse(location);
-        }
-
-        const property = await Property.create({
-            ...req.body,
-            agentId: req.user._id,
-            images,
-            location,
-            approvalStatus: 'pending' // Always pending initially
-        });
-
-        res.status(201).json(property);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-};
+    res.status(201).json(property);
+});
 
 // @desc    Update property
 // @route   PUT /api/properties/:id
 // @access  Private (Agent/Admin)
-const updateProperty = async (req, res) => {
-    try {
-        let property = await Property.findById(req.params.id);
+const updateProperty = asyncHandler(async (req, res) => {
+    const property = await Property.findById(req.params.id);
 
-        if (!property) {
-            res.status(404);
-            throw new Error('Property not found');
-        }
-
-        // Check ownership
-        if (req.user.role !== 'admin' && property.agentId.toString() !== req.user._id.toString()) {
-            res.status(403);
-            throw new Error('Not authorized to update this property');
-        }
-
-        // Handle images? Complex for updates. 
-        // For simplicity, we might allow adding new images or replacing.
-        // If we get new files:
-        if (req.files && req.files.length > 0) {
-            const newImages = req.files.map(file => file.path);
-            req.body.images = [...property.images, ...newImages];
-        }
-
-        property = await Property.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
-
-        res.json(property);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+    if (!property) {
+        res.status(404);
+        throw new Error('Property not found');
     }
-};
+
+    // Check ownership
+    if (property.agentId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to update this property');
+    }
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true }
+    ).populate('agentId', 'name email avatar');
+
+    res.json(updatedProperty);
+});
 
 // @desc    Delete property
 // @route   DELETE /api/properties/:id
 // @access  Private (Agent/Admin)
-const deleteProperty = async (req, res) => {
-    try {
-        const property = await Property.findById(req.params.id);
+const deleteProperty = asyncHandler(async (req, res) => {
+    const property = await Property.findById(req.params.id);
 
-        if (!property) {
-            res.status(404);
-            throw new Error('Property not found');
-        }
-
-        if (req.user.role !== 'admin' && property.agentId.toString() !== req.user._id.toString()) {
-            res.status(403);
-            throw new Error('Not authorized');
-        }
-
-        await property.deleteOne();
-        res.json({ message: 'Property removed' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    if (!property) {
+        res.status(404);
+        throw new Error('Property not found');
     }
-};
+
+    // Check ownership
+    if (property.agentId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to delete this property');
+    }
+
+    await property.deleteOne();
+    res.json({ message: 'Property removed' });
+});
+
+// @desc    Publish property (submit for approval)
+// @route   POST /api/properties/:id/publish
+// @access  Private (Agent/Admin)
+const publishProperty = asyncHandler(async (req, res) => {
+    const property = await Property.findById(req.params.id);
+
+    if (!property) {
+        res.status(404);
+        throw new Error('Property not found');
+    }
+
+    // Check ownership
+    if (property.agentId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to publish this property');
+    }
+
+    property.approvalStatus = 'pending';
+    await property.save();
+
+    res.json(property);
+});
+
+// @desc    Get property stats
+// @route   GET /api/properties/:id/stats
+// @access  Private (Agent/Admin)
+const getPropertyStats = asyncHandler(async (req, res) => {
+    const property = await Property.findById(req.params.id);
+
+    if (!property) {
+        res.status(404);
+        throw new Error('Property not found');
+    }
+
+    // Check ownership
+    if (property.agentId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to view stats');
+    }
+
+    res.json(property.stats);
+});
+
+// @desc    Upload property images
+// @route   POST /api/properties/upload
+// @access  Private (Agent/Admin)
+const uploadImages = asyncHandler(async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        res.status(400);
+        throw new Error('No images uploaded');
+    }
+
+    try {
+        const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer));
+        const results = await Promise.all(uploadPromises);
+        const urls = results.map(result => result.secure_url);
+        res.json({ urls });
+    } catch (error) {
+        console.error('Image Upload Error:', error);
+        res.status(500);
+        throw new Error('Image upload failed: ' + error.message);
+    }
+});
 
 module.exports = {
     getProperties,
     getProperty,
+    getAgentProperties,
     createProperty,
     updateProperty,
-    deleteProperty
+    deleteProperty,
+    publishProperty,
+    getPropertyStats,
+    uploadImages
 };

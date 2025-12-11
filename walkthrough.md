@@ -1,216 +1,183 @@
-# Professional Real Estate MERN Stack Application - Implementation Walkthrough
+# Seller / Agent Dashboard Execution Plan
 
-## 1. Planned File Structure
+## 1. Development Plan & Strategy
 
+This plan focuses strictly on the **Seller/Agent** workflows. We will implement the backend logic to support property management, ownership validation, and status transitions (draft -> pending). The frontend will be a premium, animated experience using Framer Motion.
+
+### Phase 1: Backend Foundation
+1.  **Schema Updates**: Update `User` (roles) and `Property` (status fields, admin notes, stats).
+2.  **Middleware**: Ensure strict ownership validation and "agent" role checking.
+3.  **Controllers**: Implement complete CRUD, publishing logic, and image handling.
+4.  **Routes**: Secure endpoints with auth and role middleware.
+
+### Phase 2: Frontend Core & State
+1.  **Dependencies**: Install `framer-motion`, `react-dropzone` (for image upload).
+2.  **API Slice**: Create `propertiesApiSlice` with RTK Query for caching and invalidation.
+3.  **Components**: Build reusable, animated atomic components (cards, inputs, uploader).
+
+### Phase 3: Dashboard & workflows
+1.  **Layout**: Create the Seller layout with animated transitions.
+2.  **Pages**: Implement Dashboard (stats/list), Add Property (wizard/form), Edit Property.
+3.  **Polish**: Add Toast notifications, loading skeletons, and micro-interactions.
+
+---
+
+## 2. File Structure & modifications
+
+### Backend
 ```text
-root/
-├── .gitignore
-├── .env.example
-├── README.md
-├── walkthrough.md
-├── backend/
-│   ├── package.json
-│   ├── server.js
-│   ├── config/
-│   │   ├── db.js
-│   │   └── cloudinary.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Property.js
-│   │   └── Inquiry.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── propertyRoutes.js
-│   │   └── inquiryRoutes.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── propertyController.js
-│   │   └── inquiryController.js
-│   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   ├── roleMiddleware.js
-│   │   ├── errorMiddleware.js
-│   │   └── uploadMiddleware.js
-│   ├── utils/
-│   │   └── googleClient.js
-│   └── tests/
-│       └── properties.test.js
-└── frontend/
-    ├── package.json
-    ├── vite.config.js
-    ├── tailwind.config.js
-    ├── postcss.config.js
-    ├── index.html
-    └── src/
-        ├── main.jsx
-        ├── App.jsx
-        ├── api/
-        │   └── axiosInstance.js
-        ├── store/
-        │   ├── index.js
-        │   ├── authSlice.js
-        │   └── apiSlice.js
-        ├── components/
-        │   ├── common/
-        │   │   ├── Button.jsx
-        │   │   ├── Input.jsx
-        │   │   └── Layout.jsx
-        │   ├── layout/
-        │   │   ├── Navbar.jsx
-        │   │   └── Footer.jsx
-        │   ├── properties/
-        │   │   ├── PropertyCard.jsx
-        │   │   └── PropertyFilters.jsx
-        │   └── auth/
-        │       ├── GoogleLoginBtn.jsx
-        │       └── RequireAuth.jsx
-        ├── pages/
-        │   ├── Home.jsx
-        │   ├── Properties.jsx
-        │   ├── PropertyDetail.jsx
-        │   ├── Login.jsx
-        │   ├── Register.jsx
-        │   ├── Dashboard.jsx
-        │   └── AdminDashboard.jsx
-        ├── styles/
-        │   ├── index.css
-        │   └── animations.js
-        └── utils/
-            └── formatDate.js
+/backend
+├── controllers
+│   ├── propertyController.js       # [MODIFY] Add agent CRUD, stats, publish
+│   └── authController.js           # [MODIFY] Add upgrade-agent
+├── middleware
+│   └── authMiddleware.js           # [No Change] (Already has protect/authorize)
+├── models
+│   ├── Property.js                 # [MODIFY] Add approvalStatus, isDraft, views, inquiries
+│   └── User.js                     # [MODIFY] Ensure role enum includes 'agent'
+└── routes
+    ├── propertyRoutes.js           # [MODIFY] Bind new controller methods
+    └── authRoutes.js               # [MODIFY] Add /upgrade-agent
 ```
 
-## 2. Exact Terminal Commands
-*These commands are prepared for execution upon approval.*
-
-### Initial Setup and Folders
-```powershell
-# Create directories
-mkdir backend
-mkdir frontend
-
-# Root files
-New-Item -Path .gitignore -ItemType File
-New-Item -Path .env.example -ItemType File
-New-Item -Path README.md -ItemType File
+### Frontend
+```text
+/frontend/src
+├── api
+│   └── propertiesApiSlice.js       # [NEW] RTK Query endpoints
+├── components
+│   ├── Seller
+│   │   ├── PropertyForm.jsx        # [NEW] Reusable form with validation
+│   │   ├── PropertyCard.jsx        # [NEW] Animated card with actions
+│   │   └── StatsCard.jsx           # [NEW] Animated stat display
+│   └── ui
+│       ├── AnimatedPage.jsx        # [NEW] Framer Motion wrapper
+│       ├── AnimatedGrid.jsx        # [NEW] Staggered grid container
+│       └── ImageUploader.jsx       # [NEW] Drag & drop with preview
+├── pages
+│   ├── SellerDashboard.jsx         # [NEW] Main hub
+│   ├── AddProperty.jsx             # [NEW] Creation flow
+│   └── EditProperty.jsx            # [NEW] Update flow
+└── App.jsx                         # [MODIFY] Add seller routes
 ```
 
-### Backend Initialization
-```powershell
-cd backend
-npm init -y
+---
 
-# Install Core Dependencies
-npm install express mongoose dotenv cors cookie-parser jsonwebtoken google-auth-library cloudinary multer helmet morgan
+## 3. Terminal Commands
 
-# Install Dev Dependencies
-npm install --save-dev nodemon jest supertest cross-env
-cd ..
+I will run these commands in order.
+
+```bash
+# Backend Dependencies (assumes basic setup exists)
+npm install cloudinary multer streamifier --prefix backend
+
+# Frontend Dependencies
+npm install framer-motion react-dropzone --prefix frontend
+
+# Verify directory structure
+mkdir -p frontend/src/components/Seller
+mkdir -p frontend/src/components/ui
 ```
 
-### Frontend Initialization
-```powershell
-# Create Vite React App
-npm create vite@latest frontend -- --template react
+---
 
-cd frontend
-npm install
+## 4. API Specifications
 
-# Install Core Dependencies
-npm install react-router-dom @reduxjs/toolkit react-redux axios lucide-react framer-motion clsx tailwind-merge
+### Data Models
 
-# Install Tailwind CSS
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-
-# Install Testing Dependencies
-npm install --save-dev @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom vitest playwright
-cd ..
-```
-
-## 3. Sequence of Development Steps
-
-### Phase 1: Foundation & Configuration
-1.  **Environment Setup**: Create `.env` files for both frontend and backend with strict variable checks.
-2.  **Backend Config**: Setup Express server, MongoDB connection, and Cloudinary configuration.
-3.  **Frontend Config**: Configure Tailwind with "Premium Navy & Gold" theme. Setup Redux store foundation.
-
-### Phase 2: Backend Core Implementation
-4.  **Models & Schema**: Define strict schemas for `User`, `Property`, and `Inquiry` with validation.
-5.  **Authentication Module**: Implement Register, Login, Logout, and JWT Refresh Token logic.
-6.  **Google OAuth Backend**: Create the controller to verify Google ID Tokens and create/manage users.
-7.  **Middleware**: Implement JWT protection, Role-based access control (RBAC), and global error handling.
-
-### Phase 3: Premium UI System (Frontend)
-8.  **Design Tokens**: Define the color palette in `tailwind.config.js`:
-    *   Primary: Deep Navy (`#0B1120`, `#1E293B`)
-    *   Accent: Gold (`#D4AF37`, `#F59E0B`)
-    *   Typography: Modern Sans-Serif (Inter/Outfit)
-9.  **Layouts**: Build the main `Layout` component with a responsive navigation bar and footer using the premium styling.
-10. **Shared Components**: Create reusable UI atoms (Buttons, Inputs, Cards) with `framer-motion` definitions/animations.
-
-### Phase 4: Feature Implementation
-11. **Frontend Auth**: Implement Login/Register pages. Integrate **Google Identity Services SDK** for the "Continue with Google" button.
-12. **Property Management (Backend)**: CRUD routes for Properties (filtering, pagination, sorting). Image upload via Multer+Cloudinary.
-13. **Property Listing (Frontend)**: Properties page with sticky sidebar filters, grid layout, and premium `PropertyCard` components.
-14. **Detail Views**: Single property view with hero images, agent contact forms, and map placeholders.
-15. **Dashboards**: Separate views for User (Wishlist), Agent (Manage Props), and Admin (Approvals).
-
-### Phase 5: Testing & Quality Assurance
-16. **Backend Tests**: Write Jest tests for `GET /api/properties` to ensure data integrity.
-17. **Frontend Tests**: Write RTL tests for `PropertyCard` rendering.
-18. **E2E Tests**: Setup Playwright/Cypress for a Critical User Journey (Search -> View -> Detail).
-
-## 4. Google OAuth Strategy
-
-### Frontend (`GoogleLoginBtn.jsx`)
-*   **Library**: Load `https://accounts.google.com/gsi/client` script.
-*   **Initialization**:
-    ```javascript
-    window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse
-    });
-    ```
-*   **Rendering**: Render the button in the login form.
-*   **Callback**: `handleGoogleResponse` receives the JWT credential from Google, passing it to `redux` action -> `POST /api/auth/google`.
-
-### Backend (`authController.js`)
-*   **Library**: `google-auth-library`.
-*   **Logic**:
-    1.  Receive `credential` (token) from frontend.
-    2.  Verify token using `client.verifyIdToken()`.
-    3.  Extract `email`, `name`, `picture`, `sub` (googleId).
-    4.  Check if `User` exists by `email` or `googleId`.
-    5.  **If New**: Create user with `role: 'user'` and random password.
-    6.  **If Exists**: Update avatar if needed.
-    7.  Generate Access & Refresh JWTs and return to client via HttpOnly cookies (refresh) and JSON (access).
-
-## 5. Premium UI Tokens (Tailwind Config)
-
-We will enforce the premium look via `tailwind.config.js`:
-
+**Property Schema Extensions**:
 ```javascript
-theme: {
-  extend: {
-    colors: {
-      navy: {
-        900: '#0a192f', // Deepest background
-        800: '#112240', // Card background
-        700: '#233554', // Border/Hover
-      },
-      gold: {
-        400: '#d4af37', // Primary Accent
-        500: '#c5a028', // Hover Accent
-      },
-      cream: '#e6f1ff', // Text Primary
-    },
-    fontFamily: {
-      sans: ['Inter', 'sans-serif'],
-      serif: ['Playfair Display', 'serif'], // For Headings
-    }
+{
+  agentId: { type: ObjectId, ref: 'User', required: true },
+  approvalStatus: { type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' },
+  isArchived: { type: Boolean, default: false },
+  adminNote: { type: String }, // For rejection reasons
+  stats: {
+    views: { type: Number, default: 0 },
+    inquiries: { type: Number, default: 0 },
+    wishlistCount: { type: Number, default: 0 }
   }
 }
 ```
 
+### Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/auth/upgrade-agent` | Private | Upgrades current user to 'agent' role |
+| **GET** | `/api/properties/agent/my-listings` | Agent | Get all properties owned by current user |
+| **GET** | `/api/properties/:id/stats` | Agent | Get detailed visual stats for a property |
+| **POST** | `/api/properties` | Agent | Create a new property (starts as draft) |
+| **PUT** | `/api/properties/:id` | Agent | Update property details |
+| **DELETE** | `/api/properties/:id` | Agent | Soft delete or archive property |
+| **POST** | `/api/properties/:id/publish` | Agent | Change status from `draft` -> `pending` |
+| **POST** | `/api/upload` | Agent | Upload single/multiple images to Cloudinary |
+
 ---
-**Status:** Plan Ready. Waiting for "APPROVED — CONTINUE".
+
+## 5. Animation Strategy (Framer Motion)
+
+All animations will check for `prefers-reduced-motion`.
+
+### 1. Page Transitions (`AnimatedPage.jsx`)
+*   **Initial**: `opacity: 0`, `x: 20`
+*   **Animate**: `opacity: 1`, `x: 0`
+*   **Exit**: `opacity: 0`, `x: -20`
+*   **Transition**: `duration: 0.3`, `ease: "easeOut"`
+
+### 2. Staggered Grids (`AnimatedGrid.jsx`)
+*   **Container**: `staggerChildren: 0.05`
+*   **Item**: `y: 20` -> `y: 0`, `opacity: 0` -> `opacity: 1`
+
+### 3. Cards (`PropertyCard.jsx`)
+*   **Hover**: `y: -5`, `scale: 1.02`, `shadow: "0px 10px 20px rgba(0,0,0,0.1)"`
+*   **Tap**: `scale: 0.98`
+*   **Mount**: Spring animation pop-in
+
+### 4. Image Uploader
+*   **Drag Over**: Pulse animation on dropzone border.
+*   **Upload Success**: Checkmark animation using `pathLength`.
+*   **Reorder**: `layout` prop for smooth reordering of image thumbnails.
+
+---
+
+## 6. Admin Integration & State Transitions
+
+This system sets up the data for the Admin team but does not perform Admin actions.
+
+**Status Flow**:
+1.  **Draft**: Created by Agent. Visible only to Agent.
+2.  **Pending**: Agent clicks "Publish". Visible to Agent (waiting) and Admin (inbox).
+3.  **Approved** (Future): Admin action. Visible on public site.
+4.  **Rejected** (Future): Admin action with `adminNote`. Agent can edit and resubmit (back to `pending`).
+
+**Database Hooks**:
+*   `publish` endpoint sets `approvalStatus = 'pending'`, `adminNote = null`.
+*   `update` endpoint (if rejected) resets `approvalStatus = 'draft'` (optional workflow, or keeps as is until re-published).
+
+---
+
+## 7. Execution Checklist
+
+### Backend
+- [ ] Install dependencies
+- [ ] Update `Property.js` schema
+- [ ] Create `propertyController.js` (Agent methods)
+- [ ] Create `propertyRoutes.js` (Agent routes)
+- [ ] Update `authController.js` (Upgrade)
+- [ ] Create `utils/cloudinary.js` (Config)
+
+### Frontend
+- [ ] Install dependencies
+- [ ] Create `propertiesApiSlice.js`
+- [ ] Create UI components (`AnimatedPage`, `AnimatedGrid`, `ImageUploader`)
+- [ ] Create Seller Components (`PropertyForm`, `PropertyCard`, `StatsCard`)
+- [ ] Create Pages (`SellerDashboard`, `AddProperty`, `EditProperty`)
+- [ ] Route configuration in `App.jsx`
+
+### Verification
+- [ ] Test "Upgrade to Agent" flow
+- [ ] Test Create Property -> Verify Draft status
+- [ ] Test Image Upload -> Verify Cloudinary URL
+- [ ] Test Publish -> Verify Pending status
+- [ ] Check Animations on route change and hover

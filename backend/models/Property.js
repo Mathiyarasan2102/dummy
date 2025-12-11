@@ -69,17 +69,40 @@ const propertySchema = new mongoose.Schema({
     },
     approvalStatus: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
-        default: 'pending'
+        enum: ['draft', 'pending', 'approved', 'rejected'],
+        default: 'draft'
+    },
+    isArchived: {
+        type: Boolean,
+        default: false
+    },
+    adminNote: {
+        type: String
+    },
+    stats: {
+        views: {
+            type: Number,
+            default: 0
+        },
+        inquiries: {
+            type: Number,
+            default: 0
+        },
+        wishlistCount: {
+            type: Number,
+            default: 0
+        }
     }
 }, {
     timestamps: true
 });
 
 // Create slug from name
-propertySchema.pre('save', function (next) {
-    this.slug = this.title.split(' ').join('-').toLowerCase() + '-' + Date.now();
-    next();
+// Create slug from name
+propertySchema.pre('save', async function () {
+    if (this.isModified('title') || this.isNew) {
+        this.slug = this.title.split(' ').join('-').toLowerCase() + '-' + Date.now();
+    }
 });
 
 module.exports = mongoose.model('Property', propertySchema);

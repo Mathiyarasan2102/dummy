@@ -1,31 +1,24 @@
 const mongoose = require('mongoose');
 
 const inquirySchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    agentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
     propertyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Property',
         required: true
     },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     message: {
         type: String,
-        required: [true, 'Please add a message']
-    },
-    scheduledVisit: {
-        type: Date
+        required: [true, 'Please add a message'],
+        maxlength: [1000, 'Message cannot be more than 1000 characters']
     },
     status: {
         type: String,
-        enum: ['pending', 'reviewed', 'contacted', 'closed'],
+        enum: ['pending', 'reviewed', 'responded'],
         default: 'pending'
     }
 }, {

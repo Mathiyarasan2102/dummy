@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRegisterMutation } from '../store/usersApiSlice';
 import { setCredentials } from '../store/authSlice';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import GoogleLoginBtn from '../components/auth/GoogleLoginBtn';
 import Layout from '../components/layout/Layout';
 
@@ -19,7 +19,9 @@ const Register = () => {
     const [register, { isLoading, error }] = useRegisterMutation();
     const { user } = useSelector((state) => state.auth);
 
-    const from = location.state?.from?.pathname || '/';
+    const [searchParams] = useSearchParams();
+    const from = searchParams.get('redirect') || location.state?.from?.pathname || '/';
+    const isSeller = searchParams.get('isSeller') === 'true';
 
     useEffect(() => {
         if (user) {
@@ -34,7 +36,13 @@ const Register = () => {
             return;
         }
         try {
-            const res = await register({ name, email, password }).unwrap();
+            const userData = {
+                name,
+                email,
+                password,
+                role: isSeller ? 'agent' : 'user'
+            };
+            const res = await register(userData).unwrap();
             dispatch(setCredentials({
                 user: {
                     _id: res._id,
@@ -45,7 +53,7 @@ const Register = () => {
                 },
                 token: res.token
             }));
-            navigate(from, { replace: true });
+            navigate(isSeller ? '/seller/dashboard' : from, { replace: true });
         } catch (err) {
             console.error(err);
         }
@@ -55,7 +63,9 @@ const Register = () => {
         <Layout>
             <div className="flex justify-center items-center min-h-[calc(100vh-64px)] py-12">
                 <div className="w-full max-w-md bg-navy-800 p-8 rounded-lg shadow-xl border border-navy-700">
-                    <h1 className="text-3xl font-serif text-center text-gold-400 mb-6">Create Account</h1>
+                    <h1 className="text-3xl font-serif text-center text-gold-400 mb-6">
+                        {isSeller ? 'Become a LuxeEstate Agent' : 'Create Account'}
+                    </h1>
                     {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-center">{error?.data?.message || error.error}</div>}
                     <form onSubmit={submitHandler} className="space-y-6">
                         <div>
@@ -126,7 +136,7 @@ const Register = () => {
                     </div>
 
                     <p className="mt-8 text-center text-sm text-gray-400">
-                        Already have an account? <Link to="/login" className="text-gold-400 hover:text-gold-500">Login</Link>
+                        Already have an account? <Link to={`/login${isSeller ? '?isSeller=true' : ''}`} className="text-gold-400 hover:text-gold-500">Login</Link>
                     </p>
                 </div>
             </div>

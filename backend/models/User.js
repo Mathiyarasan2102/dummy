@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add an email'],
         unique: true,
+        lowercase: true,
         match: [
             /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
             'Please add a valid email'
@@ -27,7 +28,7 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: 'https://res.cloudinary.com/demo/image/upload/v1578587606/placeholder_jwb00i.jpg'
+        default: 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff'
     },
     role: {
         type: String,

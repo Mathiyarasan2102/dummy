@@ -146,13 +146,13 @@ const PropertyDetail = () => {
                             <h3 className="text-xl font-serif text-cream mb-6">Contact Agent</h3>
                             <div className="flex items-center mb-6">
                                 <img
-                                    src={property.agentId?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(property.agentId?.name || "Agent") + "&background=1e293b&color=fbbf24&size=128&length=1"}
+                                    src={property.agentId?.avatar && !property.agentId.avatar.includes('ui-avatars.com') ? property.agentId.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent((property.agentId?.name || "Agent").charAt(0))}&background=1e293b&color=fbbf24&size=128&length=1`}
                                     alt="Agent"
                                     className="w-16 h-16 rounded-full border-2 border-gold-400 mr-4 object-cover"
                                     loading="lazy"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(property.agentId?.name || "Agent") + "&background=1e293b&color=fbbf24&size=128&length=1";
+                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((property.agentId?.name || "Agent").charAt(0))}&background=1e293b&color=fbbf24&size=128&length=1`;
                                     }}
                                 />
                                 <div>

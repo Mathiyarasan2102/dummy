@@ -46,6 +46,12 @@ export const usersApiSlice = apiSlice.injectEndpoints({
                 method: 'PUT',
             }),
         }),
+        upgradeToAgent: builder.mutation({
+            query: () => ({
+                url: '/auth/upgrade-agent',
+                method: 'POST',
+            }),
+        }),
     }),
 });
 
@@ -56,5 +62,6 @@ export const {
     useLogoutMutation,
     useUpdateUserMutation,
     useGetWishlistQuery,
-    useToggleWishlistMutation
+    useToggleWishlistMutation,
+    useUpgradeToAgentMutation
 } = usersApiSlice;

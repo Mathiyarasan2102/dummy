@@ -2,15 +2,22 @@ const express = require('express');
 const router = express.Router();
 const {
     createInquiry,
-    getMyInquiries,
-    getAgentInquiries
+    getAgentInquiries,
+    getUserInquiries,
+    updateInquiryStatus
 } = require('../controllers/inquiryController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
+router.route('/')
+    .post(protect, createInquiry);
 
-router.post('/', createInquiry);
-router.get('/my', getMyInquiries);
-router.get('/agent', authorize('agent', 'admin'), getAgentInquiries);
+router.route('/agent')
+    .get(protect, authorize('agent', 'admin'), getAgentInquiries);
+
+router.route('/my')
+    .get(protect, getUserInquiries);
+
+router.route('/:id')
+    .put(protect, authorize('agent', 'admin'), updateInquiryStatus);
 
 module.exports = router;

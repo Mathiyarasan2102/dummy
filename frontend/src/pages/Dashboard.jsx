@@ -59,13 +59,13 @@ const Dashboard = () => {
                         <h2 className="text-2xl font-serif text-cream mb-6">Profile Settings</h2>
                         <div className="flex items-center mb-8">
                             <img
-                                src={user?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.name || "User") + "&background=1e293b&color=fbbf24&size=256&length=1"}
+                                src={user?.avatar && !user.avatar.includes('ui-avatars.com') ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.name || "User").charAt(0))}&background=1e293b&color=fbbf24&size=256&length=1`}
                                 alt={user?.name}
                                 className="w-24 h-24 rounded-full border-2 border-gold-400 mr-6 object-cover"
                                 loading="lazy"
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.name || "User") + "&background=1e293b&color=fbbf24&size=256&length=1";
+                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.name || "User").charAt(0))}&background=1e293b&color=fbbf24&size=256&length=1`;
                                 }}
                             />
                             <div>

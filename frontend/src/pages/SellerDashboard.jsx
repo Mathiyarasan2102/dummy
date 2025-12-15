@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Plus, Home, BarChart2, Briefcase, Loader, ShieldCheck, Mail, CheckCircle, Smartphone
+    Plus, Home, BarChart2, Briefcase, Loader, ShieldCheck, Mail, CheckCircle, Smartphone, ArrowLeft
 } from 'lucide-react';
 import {
     useGetAgentPropertiesQuery,
@@ -59,8 +59,18 @@ const UpgradeToAgent = () => {
 const SellerDashboard = () => {
     const { user } = useSelector((state) => state.auth);
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('overview');
+
+    // Get active tab from localStorage or default to 'overview'
+    const [activeTab, setActiveTabState] = useState(() => {
+        return localStorage.getItem('sellerDashboardTab') || 'overview';
+    });
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Function to change tab and save to localStorage
+    const setActiveTab = (tab) => {
+        setActiveTabState(tab);
+        localStorage.setItem('sellerDashboardTab', tab);
+    };
 
     // Fetch real data
     const {
@@ -148,6 +158,17 @@ const SellerDashboard = () => {
 
     return (
         <AnimatedPage className="container mx-auto px-4 py-8">
+            {/* Breadcrumb / Back to Home */}
+            <div className="mb-6">
+                <Link
+                    to="/"
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-gold-400 transition-colors text-sm"
+                >
+                    <ArrowLeft size={16} />
+                    <span>Back to Home</span>
+                </Link>
+            </div>
+
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-serif text-cream">Agent Dashboard</h1>
@@ -223,8 +244,8 @@ const SellerDashboard = () => {
 
                             <div className="bg-navy-800 p-6 rounded-xl border border-navy-700">
                                 <h3 className="text-xl font-serif text-cream mb-4">Performance Overview</h3>
-                                <div className="h-48 w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                <div className="w-full" style={{ height: '192px' }}>
+                                    <ResponsiveContainer width="100%" height={192}>
                                         <LineChart data={analyticsData}>
                                             <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} tickLine={false} axisLine={false} />
                                             <Tooltip
@@ -371,8 +392,8 @@ const SellerDashboard = () => {
                     <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <div className="bg-navy-800 p-6 rounded-xl border border-navy-700 mb-8">
                             <h2 className="text-xl font-serif text-cream mb-6">Traffic & Engagement</h2>
-                            <div className="h-80 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div className="w-full" style={{ height: '320px' }}>
+                                <ResponsiveContainer width="100%" height={320}>
                                     <BarChart data={analyticsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                                         <XAxis dataKey="name" stroke="#cbd5e1" />

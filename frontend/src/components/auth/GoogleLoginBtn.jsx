@@ -57,8 +57,15 @@ const GoogleLoginBtn = ({ divId = 'google-signin' }) => {
 
     useEffect(() => {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+        // If Google Client ID is not configured, don't show errors
         if (!clientId || clientId === 'your_google_client_id') {
-            console.error('VITE_GOOGLE_CLIENT_ID is not set correctly. It is currently:', clientId);
+            console.warn('Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in .env file to enable.');
+            // Hide the button container if no client ID
+            const targetDiv = document.getElementById(divId);
+            if (targetDiv) {
+                targetDiv.style.display = 'none';
+            }
             return;
         }
 

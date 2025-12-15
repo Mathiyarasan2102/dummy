@@ -9,6 +9,19 @@ const connectDB = require('./config/db');
 // Load env vars
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'MONGO_URI'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ ERROR: Missing required environment variables:');
+    missingEnvVars.forEach(varName => {
+        console.error(`   - ${varName}`);
+    });
+    console.error('\n📝 Please add these to your backend/.env file');
+    process.exit(1);
+}
+
 // Connect to database
 connectDB();
 
@@ -36,6 +49,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/properties', require('./routes/propertyRoutes'));
 app.use('/api/inquiries', require('./routes/inquiryRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/about', require('./routes/aboutRoutes'));
 
 // Error Handler Middleware
 app.use((err, req, res, next) => {

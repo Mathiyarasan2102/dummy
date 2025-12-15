@@ -4,6 +4,7 @@ import { useRegisterMutation } from '../../store/usersApiSlice';
 import { setCredentials } from '../../store/authSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import GoogleLoginBtn from './GoogleLoginBtn';
+import toast from 'react-hot-toast';
 
 const RegisterForm = () => {
     const [name, setName] = useState('');
@@ -31,7 +32,7 @@ const RegisterForm = () => {
     const submitHandler = async (e) => {
         e.preventDefault();
         if (password !== confirmPassword) {
-            alert('Passwords do not match');
+            toast.error('Passwords do not match');
             return;
         }
         try {
@@ -52,9 +53,11 @@ const RegisterForm = () => {
                 },
                 token: res.token
             }));
+            toast.success(`Welcome, ${res.name}! Your account has been created.`);
             navigate(isSeller ? '/seller/dashboard' : from, { replace: true });
         } catch (err) {
             console.error(err);
+            toast.error(err?.data?.message || 'Registration failed. Please try again.');
         }
     };
 
@@ -63,7 +66,7 @@ const RegisterForm = () => {
             <h1 className="text-3xl font-serif text-center text-gold-400 mb-6">
                 {isSeller ? 'Become a LuxeEstate Agent' : 'Create Account'}
             </h1>
-            {error && (
+            {error && (error?.data?.message || error.error) && (
                 <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-center">
                     {error?.data?.message || error.error}
                     {(error?.data?.message === 'User already exists' || error.error === 'User already exists') && (
@@ -84,6 +87,7 @@ const RegisterForm = () => {
                         placeholder="Enter name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
+                        autoComplete="name"
                         required
                     />
                 </div>
@@ -95,6 +99,7 @@ const RegisterForm = () => {
                         placeholder="Enter email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
                         required
                     />
                 </div>
@@ -106,6 +111,7 @@ const RegisterForm = () => {
                         placeholder="Enter password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="new-password"
                         required
                         minLength="6"
                     />
@@ -118,6 +124,7 @@ const RegisterForm = () => {
                         placeholder="Confirm password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
+                        autoComplete="new-password"
                         required
                         minLength="6"
                     />

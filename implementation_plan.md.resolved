@@ -1,0 +1,138 @@
+# Agent Contact Card Enhancement
+
+A comprehensive plan to create a perfect, premium agent contact card component for the property details page that provides an exceptional user experience with modern design aesthetics.
+
+## Visual Design Mockup
+
+![Agent Contact Card Design Mockup](C:/Users/Mathi/.gemini/antigravity/brain/aeace695-cdc7-4309-9b6c-7a290b3ddae0/agent_contact_card_1765459530971.png)
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Design Approach**: The new agent contact card will feature:
+> - **Premium glassmorphism design** with backdrop blur effects
+> - **Animated hover interactions** for enhanced engagement
+> - **Multiple contact methods** (phone, email, WhatsApp, schedule viewing)
+> - **Agent statistics and credentials** display
+> - **Responsive design** that works perfectly on all devices
+> - **Smooth animations** using Framer Motion
+> 
+> Please confirm if this approach aligns with your vision, or if you'd like any specific features added/modified.
+
+## Proposed Changes
+
+### Frontend Components
+
+#### [NEW] [AgentContactCard.jsx](file:///c:/Users/Mathi/Desktop/RealEstateWebsite/frontend/src/components/property/AgentContactCard.jsx)
+
+**Purpose**: A standalone, reusable agent contact card component with premium design
+
+**Features**:
+1. **Agent Profile Section**
+   - Large, circular avatar with gold border and hover effect
+   - Agent name with professional title/designation
+   - Years of experience badge
+   - Rating display with stars
+   - Verified agent badge
+
+2. **Agent Statistics**
+   - Properties sold count
+   - Active listings count
+   - Client satisfaction rating
+   - Response time indicator
+
+3. **Contact Methods**
+   - Primary CTA: "Schedule a Viewing" button with calendar icon
+   - Phone call button with direct tel: link
+   - Email button with mailto: link
+   - WhatsApp button with pre-filled message
+   - All buttons with icon + text, hover animations
+
+4. **Quick Inquiry Form**
+   - Collapsible/expandable form section
+   - Name, email, phone, message fields
+   - "Send Message" button with loading state
+   - Form validation
+
+5. **Design Elements**
+   - Glassmorphism background with backdrop blur
+   - Gradient borders with gold accent
+   - Smooth hover transitions
+   - Micro-animations on interactions
+   - Sticky positioning on desktop
+   - Shadow effects with gold glow
+
+---
+
+#### [MODIFY] [PropertyDetail.jsx](file:///c:/Users/Mathi/Desktop/RealEstateWebsite/frontend/src/pages/PropertyDetail.jsx)
+
+**Changes**:
+- Replace the current basic agent contact section (lines 213-249) with the new `AgentContactCard` component
+- Pass property agent data as props
+- Maintain sticky positioning behavior
+- Ensure proper responsive grid layout
+
+**Current Implementation Issues**:
+- Basic design lacking visual appeal
+- Limited contact options (only message form)
+- No agent credentials or statistics
+- Missing interactive elements
+- No social proof or trust indicators
+
+**Improvements**:
+- Rich, premium visual design
+- Multiple contact methods
+- Agent credibility indicators
+- Enhanced user engagement
+- Better conversion optimization
+
+---
+
+### Component Structure
+
+```
+frontend/src/components/property/
+├── AgentContactCard.jsx (NEW)
+└── (create directory if needed)
+```
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Start the development server
+cd frontend
+npm run dev
+```
+
+### Manual Verification
+1. **Visual Design Check**
+   - Navigate to any property details page
+   - Verify the agent contact card displays with premium aesthetics
+   - Check glassmorphism effect and gold accents
+   - Confirm smooth animations on hover
+
+2. **Responsive Testing**
+   - Test on desktop (1920px, 1440px, 1024px)
+   - Test on tablet (768px)
+   - Test on mobile (375px, 414px)
+   - Verify sticky behavior on desktop
+   - Confirm proper stacking on mobile
+
+3. **Interaction Testing**
+   - Click each contact button (phone, email, WhatsApp)
+   - Test "Schedule a Viewing" button
+   - Expand/collapse inquiry form
+   - Submit inquiry form with validation
+   - Verify hover effects on all interactive elements
+
+4. **Data Display**
+   - Verify agent name, avatar, and title display correctly
+   - Check that agent statistics render properly
+   - Confirm rating stars display accurately
+   - Validate all contact information is correct
+
+5. **Browser Compatibility**
+   - Test in Chrome, Firefox, Safari, Edge
+   - Verify backdrop-blur support or graceful fallback
+   - Check animation performance

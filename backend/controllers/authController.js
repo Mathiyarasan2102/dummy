@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 const client = require('../utils/googleClient');
 const { generateAccessToken, generateRefreshToken } = require('../utils/generateToken');
 
@@ -66,12 +67,28 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
+        }
+
         const normalizedEmail = email.toLowerCase();
 
         // Check for user email
         const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
-        if (user && (await user.matchPassword(password))) {
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Check if user has a password (might be Google-only user)
+        if (!user.password) {
+            return res.status(401).json({ message: 'Please use Google Sign-In for this account' });
+        }
+
+        const isPasswordMatch = await user.matchPassword(password);
+
+        if (isPasswordMatch) {
             const accessToken = generateAccessToken(user._id);
             const refreshToken = generateRefreshToken(user._id);
 
@@ -91,11 +108,11 @@ const loginUser = async (req, res) => {
                 token: accessToken
             });
         } else {
-            res.status(401);
-            throw new Error('Invalid credentials');
+            res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
-        res.status(res.statusCode === 200 ? 500 : res.statusCode).json({ message: error.message });
+        console.error('Login error:', error);
+        res.status(500).json({ message: error.message || 'Server error during login' });
     }
 };
 

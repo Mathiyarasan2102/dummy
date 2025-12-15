@@ -4,6 +4,7 @@ import { useLoginMutation } from '../../store/usersApiSlice';
 import { setCredentials } from '../../store/authSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import GoogleLoginBtn from './GoogleLoginBtn';
+import toast from 'react-hot-toast';
 
 const LoginForm = () => {
     const [email, setEmail] = useState('');
@@ -40,9 +41,11 @@ const LoginForm = () => {
                 },
                 token: res.token
             }));
+            toast.success(`Welcome back, ${res.name}!`);
             navigate(from, { replace: true });
         } catch (err) {
             console.error(err);
+            toast.error(err?.data?.message || 'Login failed. Please check your credentials.');
         }
     };
 
@@ -51,7 +54,11 @@ const LoginForm = () => {
             <h1 className="text-3xl font-serif text-center text-gold-400 mb-4">
                 {isSeller ? 'Agent Login' : 'Welcome Back'}
             </h1>
-            {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-center">{error?.data?.message || error.error}</div>}
+            {error && (error?.data?.message || error.error) && (
+                <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-center">
+                    {error?.data?.message || error.error}
+                </div>
+            )}
             <form onSubmit={submitHandler} className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium text-gray-300">Email Address</label>
@@ -61,6 +68,7 @@ const LoginForm = () => {
                         placeholder="Enter email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
                         required
                     />
                 </div>
@@ -72,6 +80,7 @@ const LoginForm = () => {
                         placeholder="Enter password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
                         required
                         minLength="6"
                     />

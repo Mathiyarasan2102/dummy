@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSubmitContactFormMutation } from '../store/contactApiSlice';
+import toast from 'react-hot-toast';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -11,20 +13,86 @@ const Contact = () => {
         message: ''
     });
 
-    const handleSubmit = (e) => {
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [submitContactForm, { isLoading, isSuccess, isError, error }] = useSubmitContactFormMutation();
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert('Thank you for your message. We will get back to you shortly.');
-        setFormData({ name: '', email: '', subject: '', message: '' });
+
+        try {
+            const result = await submitContactForm(formData).unwrap();
+            toast.success(result.message || 'Thank you for your message. We will get back to you shortly.');
+            setFormData({ name: '', email: '', subject: '', message: '' });
+        } catch (err) {
+            toast.error(err?.data?.message || 'Failed to send message. Please try again.');
+        }
+    };
+
+    // Animation variants
+    const fadeInUp = {
+        initial: { opacity: 0, y: 60 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+    };
+
+    const fadeInLeft = {
+        initial: { opacity: 0, x: -60 },
+        animate: { opacity: 1, x: 0 },
+        transition: { duration: 1, ease: [0.22, 1, 0.36, 1] }
+    };
+
+    const fadeInRight = {
+        initial: { opacity: 0, x: 60 },
+        animate: { opacity: 1, x: 0 },
+        transition: { duration: 1, ease: [0.22, 1, 0.36, 1] }
+    };
+
+    const staggerContainer = {
+        animate: {
+            transition: {
+                staggerChildren: 0.15
+            }
+        }
+    };
+
+    const contactItem = {
+        initial: { opacity: 0, x: -30 },
+        animate: {
+            opacity: 1,
+            x: 0,
+            transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+        }
+    };
+
+    const formField = {
+        initial: { opacity: 0, y: 20 },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+        }
     };
 
     return (
         <Layout>
             <section className="pt-20 pb-10 bg-navy-900">
                 <div className="container mx-auto px-4 text-center">
-                    <h1 className="text-4xl md:text-5xl font-serif text-cream mb-4">Contact Us</h1>
-                    <p className="text-gray-400 max-w-xl mx-auto">
+                    <motion.h1
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-4xl md:text-5xl font-serif text-cream mb-4"
+                    >
+                        Contact Us
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-gray-400 max-w-xl mx-auto"
+                    >
                         Have a question about a property or want to list with us? Our team is ready to assist you.
-                    </p>
+                    </motion.p>
                 </div>
             </section>
 
@@ -32,98 +100,288 @@ const Contact = () => {
                 <div className="container mx-auto px-4">
                     <div className="grid md:grid-cols-2 gap-12">
                         {/* Contact Info */}
-                        <div className="space-y-8">
-                            <div className="bg-navy-800 p-8 rounded-lg border border-navy-700">
-                                <h3 className="text-xl font-serif text-cream mb-6">Get in Touch</h3>
-                                <div className="space-y-6">
-                                    <div className="flex items-start">
-                                        <MapPin className="text-gold-400 mt-1 mr-4" size={24} />
+                        <motion.div
+                            className="space-y-8"
+                            {...fadeInLeft}
+                            initial={fadeInLeft.initial}
+                            whileInView={fadeInLeft.animate}
+                            viewport={{ once: true, margin: "-100px" }}
+                        >
+                            <motion.div
+                                className="bg-navy-800 p-8 rounded-lg border border-navy-700"
+                                whileHover={{ borderColor: '#fbbf24', transition: { duration: 0.3 } }}
+                            >
+                                <motion.h3
+                                    className="text-xl font-serif text-cream mb-6"
+                                    initial={{ opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    transition={{ duration: 0.6, delay: 0.2 }}
+                                    viewport={{ once: true }}
+                                >
+                                    Get in Touch
+                                </motion.h3>
+                                <motion.div
+                                    className="space-y-6"
+                                    variants={staggerContainer}
+                                    initial="initial"
+                                    whileInView="animate"
+                                    viewport={{ once: true }}
+                                >
+                                    <motion.div
+                                        className="flex items-start"
+                                        variants={contactItem}
+                                    >
+                                        <motion.div
+                                            whileHover={{ scale: 1.2, rotate: 10 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <MapPin className="text-gold-400 mt-1 mr-4" size={24} />
+                                        </motion.div>
                                         <div>
                                             <h4 className="text-white font-medium">Headquarters</h4>
                                             <p className="text-gray-400">123 Luxury Lane, Beverly Hills<br />CA 90210, USA</p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Phone className="text-gold-400 mr-4" size={24} />
+                                    </motion.div>
+                                    <motion.div
+                                        className="flex items-center"
+                                        variants={contactItem}
+                                    >
+                                        <motion.div
+                                            whileHover={{ scale: 1.2, rotate: 10 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <Phone className="text-gold-400 mr-4" size={24} />
+                                        </motion.div>
                                         <div>
                                             <h4 className="text-white font-medium">Phone</h4>
                                             <p className="text-gray-400">+1 (555) 123-4567</p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Mail className="text-gold-400 mr-4" size={24} />
+                                    </motion.div>
+                                    <motion.div
+                                        className="flex items-center"
+                                        variants={contactItem}
+                                    >
+                                        <motion.div
+                                            whileHover={{ scale: 1.2, rotate: 10 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <Mail className="text-gold-400 mr-4" size={24} />
+                                        </motion.div>
                                         <div>
                                             <h4 className="text-white font-medium">Email</h4>
                                             <p className="text-gray-400">contact@luxeestate.com</p>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
+                                    </motion.div>
+                                </motion.div>
+                            </motion.div>
 
-                            <div className="h-[300px] bg-navy-800 rounded-lg border border-navy-700 overflow-hidden relative">
-                                {/* Placeholder for Map */}
-                                <img
-                                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                    alt="Map"
-                                    className="w-full h-full object-cover opacity-50"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-navy-900/80 px-4 py-2 rounded text-gold-400 font-medium backdrop-blur">
-                                        View on Google Maps
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                            {/* Why Choose Us - Statistics */}
+                            <motion.div
+                                className="bg-navy-800 rounded-lg border border-navy-700 overflow-hidden p-6"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.8, delay: 0.3 }}
+                                viewport={{ once: true }}
+                                whileHover={{ borderColor: '#fbbf24', transition: { duration: 0.3 } }}
+                            >
+                                <motion.h3
+                                    className="text-xl font-serif text-cream mb-6 text-center"
+                                    initial={{ opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    transition={{ duration: 0.6, delay: 0.2 }}
+                                    viewport={{ once: true }}
+                                >
+                                    Why Choose LuxeEstate
+                                </motion.h3>
+
+                                <motion.div
+                                    className="grid grid-cols-2 gap-4"
+                                    variants={staggerContainer}
+                                    initial="initial"
+                                    whileInView="animate"
+                                    viewport={{ once: true }}
+                                >
+                                    <motion.div
+                                        className="text-center p-4 bg-navy-900 rounded-lg border border-navy-700 hover:border-gold-400 transition-colors"
+                                        variants={contactItem}
+                                        whileHover={{ y: -5, transition: { duration: 0.3 } }}
+                                    >
+                                        <motion.div
+                                            className="text-3xl font-bold text-gold-400 mb-1"
+                                            initial={{ scale: 0 }}
+                                            whileInView={{ scale: 1 }}
+                                            transition={{ duration: 0.5, delay: 0.4 }}
+                                            viewport={{ once: true }}
+                                        >
+                                            200+
+                                        </motion.div>
+                                        <div className="text-sm text-gray-400">Luxury Properties</div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        className="text-center p-4 bg-navy-900 rounded-lg border border-navy-700 hover:border-gold-400 transition-colors"
+                                        variants={contactItem}
+                                        whileHover={{ y: -5, transition: { duration: 0.3 } }}
+                                    >
+                                        <motion.div
+                                            className="text-3xl font-bold text-gold-400 mb-1"
+                                            initial={{ scale: 0 }}
+                                            whileInView={{ scale: 1 }}
+                                            transition={{ duration: 0.5, delay: 0.5 }}
+                                            viewport={{ once: true }}
+                                        >
+                                            $2B+
+                                        </motion.div>
+                                        <div className="text-sm text-gray-400">Properties Sold</div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        className="text-center p-4 bg-navy-900 rounded-lg border border-navy-700 hover:border-gold-400 transition-colors"
+                                        variants={contactItem}
+                                        whileHover={{ y: -5, transition: { duration: 0.3 } }}
+                                    >
+                                        <motion.div
+                                            className="text-3xl font-bold text-gold-400 mb-1"
+                                            initial={{ scale: 0 }}
+                                            whileInView={{ scale: 1 }}
+                                            transition={{ duration: 0.5, delay: 0.6 }}
+                                            viewport={{ once: true }}
+                                        >
+                                            50+
+                                        </motion.div>
+                                        <div className="text-sm text-gray-400">Exclusive Listings</div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        className="text-center p-4 bg-navy-900 rounded-lg border border-navy-700 hover:border-gold-400 transition-colors"
+                                        variants={contactItem}
+                                        whileHover={{ y: -5, transition: { duration: 0.3 } }}
+                                    >
+                                        <motion.div
+                                            className="text-3xl font-bold text-gold-400 mb-1"
+                                            initial={{ scale: 0 }}
+                                            whileInView={{ scale: 1 }}
+                                            transition={{ duration: 0.5, delay: 0.7 }}
+                                            viewport={{ once: true }}
+                                        >
+                                            15+
+                                        </motion.div>
+                                        <div className="text-sm text-gray-400">Premium Locations</div>
+                                    </motion.div>
+                                </motion.div>
+
+                                <motion.div
+                                    className="mt-6 pt-6 border-t border-navy-700 text-center"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.6, delay: 0.8 }}
+                                    viewport={{ once: true }}
+                                >
+                                    <p className="text-gray-400 text-sm mb-3">Trusted by leading investors worldwide</p>
+                                    <div className="flex justify-center gap-2">
+                                        <motion.div
+                                            className="px-3 py-1 bg-gold-400/10 border border-gold-400/30 rounded-full text-gold-400 text-xs"
+                                            whileHover={{ scale: 1.05, backgroundColor: 'rgba(251, 191, 36, 0.2)' }}
+                                        >
+                                            Award Winning
+                                        </motion.div>
+                                        <motion.div
+                                            className="px-3 py-1 bg-gold-400/10 border border-gold-400/30 rounded-full text-gold-400 text-xs"
+                                            whileHover={{ scale: 1.05, backgroundColor: 'rgba(251, 191, 36, 0.2)' }}
+                                        >
+                                            Licensed & Insured
+                                        </motion.div>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        </motion.div>
 
                         {/* Form */}
-                        <div className="bg-navy-800 p-8 rounded-lg border border-navy-700">
-                            <h3 className="text-xl font-serif text-cream mb-6">Send us a Message</h3>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div>
+                        <motion.div
+                            className="bg-navy-800 p-8 rounded-lg border border-navy-700"
+                            {...fadeInRight}
+                            initial={fadeInRight.initial}
+                            whileInView={fadeInRight.animate}
+                            viewport={{ once: true, margin: "-100px" }}
+                            whileHover={{ borderColor: '#fbbf24', transition: { duration: 0.3 } }}
+                        >
+                            <motion.h3
+                                className="text-xl font-serif text-cream mb-6"
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
+                                viewport={{ once: true }}
+                            >
+                                Send us a Message
+                            </motion.h3>
+                            <motion.form
+                                onSubmit={handleSubmit}
+                                className="space-y-6"
+                                variants={staggerContainer}
+                                initial="initial"
+                                whileInView="animate"
+                                viewport={{ once: true }}
+                            >
+                                <motion.div variants={formField}>
                                     <label className="block text-sm text-gray-400 mb-1">Full Name</label>
-                                    <input
+                                    <motion.input
                                         type="text"
                                         className="input-field"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        whileFocus={{ scale: 1.01, borderColor: '#fbbf24' }}
+                                        transition={{ duration: 0.2 }}
                                     />
-                                </div>
-                                <div>
+                                </motion.div>
+                                <motion.div variants={formField}>
                                     <label className="block text-sm text-gray-400 mb-1">Email Address</label>
-                                    <input
+                                    <motion.input
                                         type="email"
                                         className="input-field"
                                         required
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        whileFocus={{ scale: 1.01, borderColor: '#fbbf24' }}
+                                        transition={{ duration: 0.2 }}
                                     />
-                                </div>
-                                <div>
+                                </motion.div>
+                                <motion.div variants={formField}>
                                     <label className="block text-sm text-gray-400 mb-1">Subject</label>
-                                    <input
+                                    <motion.input
                                         type="text"
                                         className="input-field"
                                         required
                                         value={formData.subject}
                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        whileFocus={{ scale: 1.01, borderColor: '#fbbf24' }}
+                                        transition={{ duration: 0.2 }}
                                     />
-                                </div>
-                                <div>
+                                </motion.div>
+                                <motion.div variants={formField}>
                                     <label className="block text-sm text-gray-400 mb-1">Message</label>
-                                    <textarea
+                                    <motion.textarea
                                         rows="5"
                                         className="input-field"
                                         required
                                         value={formData.message}
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                    ></textarea>
-                                </div>
-                                <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2">
-                                    Send Message <Send size={18} />
-                                </button>
-                            </form>
-                        </div>
+                                        whileFocus={{ scale: 1.01, borderColor: '#fbbf24' }}
+                                        transition={{ duration: 0.2 }}
+                                    ></motion.textarea>
+                                </motion.div>
+                                <motion.button
+                                    type="submit"
+                                    className="btn-primary w-full flex items-center justify-center gap-2"
+                                    variants={formField}
+                                    whileHover={{ scale: 1.02, boxShadow: '0 10px 30px rgba(251, 191, 36, 0.3)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {isLoading ? 'Sending...' : 'Send Message'} <Send size={18} />
+                                </motion.button>
+                            </motion.form>
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -132,3 +390,4 @@ const Contact = () => {
 };
 
 export default Contact;
+

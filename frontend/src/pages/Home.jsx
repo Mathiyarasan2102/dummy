@@ -40,7 +40,7 @@ const Home = () => {
                 <div className="absolute inset-0 bg-navy-900">
                     <motion.div style={{ y: y1 }} className="absolute inset-0">
                         <img
-                            src="https://images.unsplash.com/photo-1600596542815-2a4f04d743ea?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
+                            src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1920&q=80"
                             alt="Luxury Home"
                             className="w-full h-full object-cover opacity-60 scale-105"
                         />
